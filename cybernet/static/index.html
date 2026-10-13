@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CyberNet · AI-Prioritized Code Security</title>
+  <meta name="description" content="Paste code, find vulnerabilities, and see them ranked by how likely they are to be real." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M20 2 36 11v18L20 38 4 29V11z" fill="var(--accent)"/>
+        <path d="M14 16h12M14 20h8M14 24h12" stroke="var(--paper)" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div><h1>CyberNet</h1><p>AI-prioritized static code security</p></div>
+    </div>
+    <button class="model-badge" id="model-badge" type="button" title="About the ML model">
+      <span class="pulse"></span><span id="model-text">Loading model…</span>
+    </button>
+  </header>
+
+  <div class="toolbar">
+    <label class="field">Language
+      <select id="language">
+        <option value="auto">Auto-detect</option>
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript / Node.js</option>
+        <option value="php">PHP</option>
+        <option value="java">Java</option>
+      </select>
+    </label>
+    <label class="field grow">File name <span class="muted">(optional, e.g. tests/test_app.py)</span>
+      <input id="filename" maxlength="200" placeholder="app.py" spellcheck="false" />
+    </label>
+    <label class="field">Example
+      <select id="example">
+        <option value="">Load an example…</option>
+        <option value="python">Vulnerable Flask app (Python)</option>
+        <option value="javascript">Vulnerable Express app (Node.js)</option>
+        <option value="php">Vulnerable shop page (PHP)</option>
+        <option value="java">Vulnerable servlet (Java)</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button class="btn quiet" id="clear" type="button">Clear</button>
+      <button class="btn primary" id="scan" type="button">Scan code <kbd>Ctrl ↵</kbd></button>
+    </div>
+  </div>
+
+  <main class="workbench">
+    <section class="pane editor-pane" aria-label="Code editor">
+      <div class="pane-head"><span class="dot"></span><span id="editor-title">untitled</span><span class="muted" id="editor-info"></span></div>
+      <div id="editor"></div>
+    </section>
+
+    <section class="pane results-pane" aria-label="Scan results">
+      <div id="empty" class="empty">
+        <div class="empty-art" aria-hidden="true">{ ⚑ }</div>
+        <h2>Paste code, press Scan</h2>
+        <p>CyberNet traces user input through your code, flags dangerous patterns and leaked secrets, then a
+           trained ML model ranks every finding by how likely it is to be <em>real and exploitable</em>.</p>
+        <p class="muted">Or pick an example above. Nothing you paste is stored.</p>
+      </div>
+
+      <div id="results" hidden>
+        <div class="scorecard">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="50" class="ring-bg"/>
+            <circle cx="60" cy="60" r="50" class="ring-fg" id="ring"/>
+          </svg>
+          <div class="grade"><b id="grade">–</b><span id="score">–</span></div>
+          <div class="score-text">
+            <h2 id="verdict">–</h2>
+            <p id="score-meta" class="muted"></p>
+            <div class="sev-row" id="sev-row"></div>
+          </div>
+        </div>
+
+        <div class="filterbar">
+          <div class="seg" role="group" aria-label="Show">
+            <button type="button" data-show="likely" aria-pressed="true">Likely real</button>
+            <button type="button" data-show="all" aria-pressed="false">All findings</button>
+          </div>
+          <div class="exports">
+            <button class="link" id="export-sarif" type="button">SARIF</button>
+            <button class="link" id="export-json" type="button">JSON</button>
+            <button class="link" id="copy-md" type="button">Copy report</button>
+          </div>
+        </div>
+
+        <ol class="findings" id="findings"></ol>
+      </div>
+      <div id="error" class="error" hidden></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>CyberNet · Python AST taint analysis + rules for JS, PHP, Java + secrets + logistic-regression prioritizer</span>
+    <a href="/docs" target="_blank" rel="noopener">API docs</a>
+  </footer>
+
+  <dialog id="model-dialog">
+    <div class="dialog-inner">
+      <button class="close" type="button" data-close aria-label="Close">✕</button>
+      <h2>How the AI ranking works</h2>
+      <div id="model-body"></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

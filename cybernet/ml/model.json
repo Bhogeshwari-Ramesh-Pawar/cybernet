@@ -1,0 +1,72 @@
+{
+  "type": "logistic_regression",
+  "features": [
+    "severity",
+    "tainted",
+    "user_input",
+    "dynamic",
+    "literal_only",
+    "sanitized",
+    "in_test",
+    "in_comment",
+    "in_route",
+    "sensitive_context",
+    "high_entropy",
+    "placeholder",
+    "cat_injection",
+    "cat_xss",
+    "cat_deserialization",
+    "cat_path_ssrf",
+    "cat_crypto",
+    "cat_config",
+    "cat_secret"
+  ],
+  "weights": [
+    1.142604,
+    1.026752,
+    1.455078,
+    0.434756,
+    -0.09414,
+    -1.250412,
+    -2.798294,
+    -0.68572,
+    0.113907,
+    1.148593,
+    1.27073,
+    -1.576509,
+    -0.855844,
+    -0.732298,
+    0.019121,
+    0.059081,
+    0.252927,
+    0.927766,
+    0.329157
+  ],
+  "bias": -1.570087,
+  "meta": {
+    "samples": 822,
+    "templates": 87,
+    "positives": 472,
+    "cross_validation": {
+      "accuracy": 0.888,
+      "precision": 0.936,
+      "recall": 0.864,
+      "f1": 0.899,
+      "tp": 408,
+      "fp": 28,
+      "tn": 322,
+      "fn": 64
+    },
+    "train": {
+      "accuracy": 0.949,
+      "precision": 0.995,
+      "recall": 0.915,
+      "f1": 0.954,
+      "tp": 432,
+      "fp": 2,
+      "tn": 348,
+      "fn": 40
+    },
+    "saved_at": "2026-10-13T18:27:53+00:00"
+  }
+}
